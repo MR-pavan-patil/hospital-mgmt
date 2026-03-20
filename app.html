@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>MediCare HMS</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="js/config.js"></script>
+</head>
+<body>
+
+<!-- Mobile overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="app-layout">
+
+<!-- ══════ SIDEBAR ══════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🏥</div>
+    <div class="brand-text"><h2>MediCare HMS</h2><span>Hospital Management</span></div>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav-dynamic">
+
+      <!-- OVERVIEW -->
+      <div class="nav-section-label nav-group" data-roles="admin,doctor">Overview</div>
+      <button class="nav-item active" data-section="dashboard" data-roles="admin,doctor" onclick="showSection('dashboard')">
+        <span class="nav-icon">📊</span>Dashboard
+      </button>
+
+      <!-- CLINICAL -->
+      <div class="nav-section-label nav-group" data-roles="admin,doctor">Clinical</div>
+      <button class="nav-item" data-section="patients" data-roles="admin,doctor" onclick="showSection('patients')">
+        <span class="nav-icon">🧑‍⚕️</span>Patients
+      </button>
+      <button class="nav-item" data-section="doctors" data-roles="admin" onclick="showSection('doctors')">
+        <span class="nav-icon">👨‍⚕️</span>Doctors
+      </button>
+      <button class="nav-item" data-section="appointments" data-roles="admin,doctor" onclick="showSection('appointments')">
+        <span class="nav-icon">📅</span>Appointments
+      </button>
+      <button class="nav-item" data-section="prescriptions" data-roles="admin,doctor" onclick="showSection('prescriptions')">
+        <span class="nav-icon">💊</span>Prescriptions
+      </button>
+      <button class="nav-item" data-section="history" data-roles="admin,doctor" onclick="showSection('history')">
+        <span class="nav-icon">📋</span>Medical History
+      </button>
+
+      <!-- SERVICES -->
+      <div class="nav-section-label nav-group" data-roles="admin,doctor">Services</div>
+      <button class="nav-item" data-section="billing" data-roles="admin" onclick="showSection('billing')">
+        <span class="nav-icon">💰</span>Billing
+      </button>
+      <button class="nav-item" data-section="lab" data-roles="admin,doctor" onclick="showSection('lab')">
+        <span class="nav-icon">🧪</span>Lab Reports
+      </button>
+      <button class="nav-item" data-section="pharmacy" data-roles="admin" onclick="showSection('pharmacy')">
+        <span class="nav-icon">🏪</span>Pharmacy
+      </button>
+
+      <!-- DOCTORS SECTION -->
+      <div class="nav-section-label nav-group" data-roles="admin,doctor">Schedule</div>
+      <button class="nav-item" data-section="schedule" data-roles="admin,doctor" onclick="showSection('schedule')">
+        <span class="nav-icon">🗓️</span>Doctor Schedule
+      </button>
+
+      <!-- ANALYTICS -->
+      <div class="nav-section-label nav-group" data-roles="admin,doctor">Analytics</div>
+      <button class="nav-item" data-section="reports" data-roles="admin,doctor" onclick="showSection('reports')">
+        <span class="nav-icon">📈</span>Reports
+      </button>
+
+    </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">U</div>
+      <div class="user-details">
+        <strong id="user-name">Loading...</strong>
+        <span id="user-role">staff</span>
+      </div>
+      <button id="logout-btn" title="Logout">⏻</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════ MAIN ══════ -->
+<main class="main-content">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+    <div class="topbar-search">
+      <input type="text" id="global-search-input" placeholder="Search patients, doctors, medicines..." autocomplete="off"/>
+      <div class="global-search-results" id="global-search-results"></div>
+    </div>
+    <button class="dark-toggle" id="dark-toggle" title="Toggle dark mode">🌙</button>
+  </div>
+
+  <div class="page-body">
+
+  <!-- DASHBOARD v5 -->
+  <section id="section-dashboard">
+
+    <!-- Welcome Banner -->
+    <div class="dash-welcome">
+      <div class="dash-welcome-text">
+        <h2 id="dash-greeting">Good morning! 👋</h2>
+        <p id="dash-date">Loading...</p>
+      </div>
+      <div class="dash-welcome-actions">
+        <button class="btn-quick" onclick="showSection('patients'); setTimeout(openPatientModal, 300)">+ New Patient</button>
+        <button class="btn-quick" onclick="showSection('appointments'); setTimeout(openApptModal, 300)">📅 Book Appointment</button>
+        <button class="btn-quick primary" onclick="showSection('prescriptions'); setTimeout(openRxBuilder, 300)">💊 New Prescription</button>
+      </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="alert-banner warning" id="dash-low-stock-alert" style="display:none">⚠️ Loading...</div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card blue"><div class="stat-label">Total Patients</div><div class="stat-value" id="stat-patients">—</div><div class="stat-footer">Registered</div><div class="stat-icon-bg">🧑‍⚕️</div></div>
+      <div class="stat-card green"><div class="stat-label">Active Doctors</div><div class="stat-value" id="stat-doctors">—</div><div class="stat-footer">Medical staff</div><div class="stat-icon-bg">👨‍⚕️</div></div>
+      <div class="stat-card purple"><div class="stat-label">Scheduled Appts</div><div class="stat-value" id="stat-appointments">—</div><div class="stat-footer">Upcoming</div><div class="stat-icon-bg">📅</div></div>
+      <div class="stat-card amber"><div class="stat-label">Pending Dues</div><div class="stat-value" id="stat-billing">—</div><div class="stat-footer">Unpaid bills</div><div class="stat-icon-bg">💰</div></div>
+    </div>
+
+    <!-- Row 1: Charts + Today's Appts -->
+    <div class="dash-row cols-3-2">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div><div class="chart-card-title">Appointments Trend</div><div class="chart-card-sub">Last 6 months</div></div>
+          <span class="chart-tag">Monthly</span>
+        </div>
+        <canvas id="dash-appt-chart" height="195"></canvas>
+      </div>
+      <div class="chart-card" style="padding:0;overflow:hidden">
+        <div class="card-header">
+          <h2>Today's Appointments <span id="today-appts-count" class="badge badge-scheduled" style="margin-left:6px">0</span></h2>
+        </div>
+        <div id="today-appts-list">
+          <div class="today-appt-item" style="justify-content:center;color:var(--muted);font-size:13px">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Revenue + Activity Feed -->
+    <div class="dash-row cols-3-2">
+      <div class="dash-row cols-1-1" style="margin-bottom:0">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div><div class="chart-card-title">Revenue</div><div class="chart-card-sub">Monthly collected (₹)</div></div>
+            <span class="chart-tag">Revenue</span>
+          </div>
+          <canvas id="dash-rev-chart" height="195"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div><div class="chart-card-title">Gender Split</div><div class="chart-card-sub">Patient distribution</div></div>
+          </div>
+          <canvas id="dash-gender-chart" height="195"></canvas>
+        </div>
+      </div>
+      <div class="chart-card" style="padding:0;overflow:hidden">
+        <div class="card-header"><h2>Recent Activity</h2></div>
+        <div class="activity-feed" id="activity-list">
+          <div class="activity-item" style="justify-content:center;color:var(--muted)">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- PATIENTS -->
+  <section id="section-patients" style="display:none">
+    <div class="page-header"><div class="page-header-left"><h1>Patients</h1><p>Manage patient registrations</p></div></div>
+    <div class="card">
+      <div class="card-header"><h2>All Patients</h2>
+        <div class="card-actions"><div class="search-box"><input type="text" id="search-patients" placeholder="Search..."/></div>
+        <button class="btn btn-add" data-rbac-add="patients" onclick="openPatientModal()">+ Add Patient</button></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Patient</th><th>Phone</th><th>Gender</th><th>Blood</th><th>Age / DOB</th><th>Conditions</th><th>Insurance</th><th>Actions</th></tr></thead>
+        <tbody id="patients-tbody"><tr><td colspan="7" class="empty-row">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- DOCTORS v6 — Card Grid -->
+  <section id="section-doctors" style="display:none">
+    <div class="page-header">
+      <div class="page-header-left"><h1>Doctors</h1><p>Medical staff management</p></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2>All Doctors</h2>
+        <div class="card-actions">
+          <div class="search-box"><input type="text" id="search-doctors" placeholder="Search doctors..."/></div>
+          <button class="btn btn-add" data-rbac-add="doctors" onclick="openDoctorModal()">+ Add Doctor</button>
+        </div>
+      </div>
+      <div class="doctors-grid" id="doctors-grid">
+        <div class="skeleton-card"><div class="skeleton skeleton-header"></div><div class="skeleton-body"><div class="skeleton skeleton-line med"></div><div class="skeleton skeleton-line short"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton skeleton-header"></div><div class="skeleton-body"><div class="skeleton skeleton-line med"></div><div class="skeleton skeleton-line short"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton skeleton-header"></div><div class="skeleton-body"><div class="skeleton skeleton-line med"></div><div class="skeleton skeleton-line short"></div></div></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- APPOINTMENTS -->
+  <section id="section-appointments" style="display:none">
+    <div class="page-header"><div class="page-header-left"><h1>Appointments</h1><p>Schedule and manage appointments</p></div></div>
+    <div class="card">
+      <div class="card-header"><h2>All Appointments</h2>
+        <div class="card-actions"><div class="search-box"><input type="text" id="search-appointments" placeholder="Search..."/></div>
+        <button class="btn btn-add" data-rbac-add="appointments" onclick="openApptModal()">+ New Appointment</button></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="appointments-tbody"><tr><td colspan="7" class="empty-row">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- MEDICAL HISTORY -->
+  <section id="section-history" style="display:none">
+    <div class="page-header">
+      <div class="page-header-left"><h1>Medical History</h1><p>Patient health records & timeline</p></div>
+    </div>
+    <div class="dash-row cols-3-2" style="margin-bottom:18px">
+      <div class="card">
+        <div class="patient-selector-bar">
+          <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase">Select Patient</label>
+          <select id="history-patient-select"><option value="">— Choose patient —</option></select>
+          <button class="btn btn-add" onclick="openHistoryModal()" data-rbac-add="patients">+ Add Record</button>
+        </div>
+        <div class="history-timeline" id="history-timeline">
+          <div style="padding:40px;text-align:center;color:var(--muted)">Select a patient to view their medical history</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="stat-card blue" style="cursor:default"><div class="stat-label">Total Visits</div><div class="stat-value" id="hist-visits">—</div><div class="stat-icon-bg">🏥</div></div>
+        <div class="stat-card purple" style="cursor:default"><div class="stat-label">Lab Tests</div><div class="stat-value" id="hist-labs">—</div><div class="stat-icon-bg">🧪</div></div>
+        <div class="stat-card green" style="cursor:default"><div class="stat-label">Total Paid</div><div class="stat-value" id="hist-bills">—</div><div class="stat-icon-bg">💰</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOCTOR SCHEDULE -->
+  <section id="section-schedule" style="display:none">
+    <div class="page-header">
+      <div class="page-header-left"><h1>Doctor Schedule</h1><p>Weekly timetable management</p></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Weekly Timetable</h2>
+        <div class="card-actions">
+          <select id="schedule-doctor-select" style="padding:9px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;background:var(--card);color:var(--text);outline:none;min-width:220px"><option value="">— Select Doctor —</option></select>
+          <button class="btn btn-add" onclick="addSlot('Monday','09:00')">+ Add Slot</button>
+        </div>
+      </div>
+      <div id="schedule-grid-wrap" style="overflow-x:auto">
+        <div style="padding:40px;text-align:center;color:var(--muted)">Select a doctor to view their schedule</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRESCRIPTIONS -->
+  <section id="section-prescriptions" style="display:none">
+    <div class="page-header"><div class="page-header-left"><h1>Prescriptions</h1><p>Generate and manage prescriptions</p></div></div>
+    <div class="card">
+      <div class="card-header"><h2>All Prescriptions</h2>
+        <div class="card-actions">
+          <button class="btn btn-add" data-rbac-add="prescriptions" onclick="openRxBuilder()">+ New Prescription</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Patient</th><th>Doctor</th><th>Diagnosis</th><th>Medicines</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="rx-tbody"><tr><td colspan="7" class="empty-row">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- BILLING v7 -->
+  <section id="section-billing" style="display:none">
+    <div class="page-header">
+      <div class="page-header-left"><h1>Billing & Payments</h1><p>Invoices, receipts and payment tracking</p></div>
+      <button class="btn btn-add" data-rbac-add="billing" onclick="openBillModal()">+ New Bill</button>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="stat-card green">
+        <div class="stat-label">Total Collected</div>
+        <div class="stat-value" id="billing-stat-revenue">—</div>
+        <div class="stat-footer">Payments received</div>
+        <div class="stat-icon-bg">💵</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Pending Amount</div>
+        <div class="stat-value" id="billing-stat-pending">—</div>
+        <div class="stat-footer">Yet to collect</div>
+        <div class="stat-icon-bg">⏳</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Total Bills</div>
+        <div class="stat-value" id="billing-stat-count">—</div>
+        <div class="stat-footer">All records</div>
+        <div class="stat-icon-bg">🧾</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <!-- Tabs -->
+        <div class="page-tabs">
+          <button class="page-tab bill-tab active" data-tab="all" onclick="filterBillsTab('all')">
+            All <span class="tab-count" id="tab-count-all">0</span>
+          </button>
+          <button class="page-tab bill-tab" data-tab="pending" onclick="filterBillsTab('pending')">
+            Pending / Due <span class="tab-count" id="tab-count-pending">0</span>
+          </button>
+          <button class="page-tab bill-tab" data-tab="paid" onclick="filterBillsTab('paid')">
+            Paid ✓ <span class="tab-count" id="tab-count-paid">0</span>
+          </button>
+        </div>
+        <div class="card-actions">
+          <div class="search-box"><input type="text" id="search-billing" placeholder="Search patient..."/></div>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Patient</th><th>Total</th><th>Paid</th><th>Due</th><th>Method</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="billing-tbody"><tr><td colspan="7" class="empty-row"><div class="spinner" style="margin:0 auto 8px"></div>Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- LAB -->
+  <section id="section-lab" style="display:none">
+    <div class="page-header"><div class="page-header-left"><h1>Lab Reports</h1><p>Diagnostic tests and results</p></div></div>
+    <div class="card">
+      <div class="card-header"><h2>All Reports</h2>
+        <div class="card-actions"><div class="search-box"><input type="text" id="search-lab" placeholder="Search..."/></div>
+        <button class="btn btn-add" data-rbac-add="lab" onclick="openLabModal()">+ New Report</button></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Patient</th><th>Test Name</th><th>Doctor</th><th>Date</th><th>Result</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="lab-tbody"><tr><td colspan="7" class="empty-row">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- PHARMACY -->
+  <section id="section-pharmacy" style="display:none">
+    <div class="page-header"><div class="page-header-left"><h1>Pharmacy 💊</h1><p>Medicine inventory with images</p></div></div>
+    <div class="card">
+      <div class="card-header"><h2>Medicine Inventory</h2>
+        <div class="card-actions">
+          <div class="search-box"><input type="text" id="search-pharmacy" placeholder="Search medicine..."/></div>
+          <input type="file" id="csv-file-input" accept=".csv" onchange="handleCSVImport(event)"/>
+          <button class="btn btn-csv" onclick="triggerCSVImport()">📂 Import CSV</button>
+          <button class="btn btn-add" data-rbac-add="pharmacy" onclick="openMedModal()">+ Add Medicine</button>
+        </div>
+      </div>
+      <div class="med-grid" id="pharmacy-grid">
+        <div class="med-grid-empty"><div class="empty-icon">💊</div><p>Loading medicines...</p></div>
+      </div>
+    </div>
+  </section>
+
+
+
+
+
+  <!-- REPORTS -->
+  <section id="section-reports" style="display:none">
+    <div class="page-header"><div class="page-header-left"><h1>Reports & Analytics</h1><p>Hospital performance — last 6 months</p></div>
+      <button class="btn btn-add" onclick="Cache.invalidateAll(); loadReports();">↻ Refresh</button>
+    </div>
+    <div id="reports-loading" style="display:none;justify-content:center;align-items:center;padding:60px;gap:12px;color:var(--muted)"><div class="spinner"></div> Loading...</div>
+    <div id="reports-content">
+      <div class="stats-grid" style="margin-bottom:20px">
+        <div class="stat-card blue"><div class="stat-label">Total Patients</div><div class="stat-value" id="r-stat-patients">—</div><div class="stat-icon-bg">🧑‍⚕️</div></div>
+        <div class="stat-card green"><div class="stat-label">Revenue Collected</div><div class="stat-value" id="r-stat-revenue">—</div><div class="stat-icon-bg">💰</div></div>
+        <div class="stat-card amber"><div class="stat-label">Pending Collections</div><div class="stat-value" id="r-stat-pending">—</div><div class="stat-icon-bg">⏳</div></div>
+      </div>
+      <div class="dash-row cols-1-1">
+        <div class="chart-card"><canvas id="appt-chart" height="220"></canvas></div>
+        <div class="chart-card"><canvas id="revenue-chart" height="220"></canvas></div>
+      </div>
+      <div class="dash-row cols-1-1" style="margin-top:18px">
+        <div class="chart-card"><canvas id="gender-chart" height="220"></canvas></div>
+        <div class="chart-card"><canvas id="doctors-chart" height="220"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  </div><!-- end page-body -->
+
+</main>
+</div>
+
+<!-- ══════════════ ALL MODALS ══════════════ -->
+
+<!-- Patient Modal v5 — Extended Fields -->
+<div class="modal-overlay" id="patient-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><h3 id="patient-modal-title">New Patient Registration</h3><button class="modal-close" onclick="closeModal('patient-modal')">✕</button></div>
+    <div class="modal-body"><input type="hidden" id="patient-id"/>
+      <div class="form-grid">
+        <div class="form-section-title">Basic Information</div>
+        <div class="field full"><label>Full Name *</label><input type="text" id="patient-name" placeholder="Patient full name"/></div>
+        <div class="field"><label>Phone</label><input type="tel" id="patient-phone" placeholder="+91 XXXXX XXXXX"/></div>
+        <div class="field"><label>Email</label><input type="email" id="patient-email" placeholder="patient@email.com"/></div>
+        <div class="field"><label>Date of Birth</label><input type="date" id="patient-dob"/></div>
+        <div class="field"><label>Gender</label><select id="patient-gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <div class="field"><label>Blood Group</label><select id="patient-blood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+        <div class="field"><label>Emergency Contact</label><input type="tel" id="patient-emergency" placeholder="Emergency number"/></div>
+        <div class="field full"><label>Address</label><textarea id="patient-address" style="min-height:60px" placeholder="Full address"></textarea></div>
+
+        <div class="form-section-title">Medical Information</div>
+        <div class="field full"><label>Known Allergies ⚠️</label><input type="text" id="patient-allergies" placeholder="e.g. Penicillin, Sulfa drugs, Pollen (leave blank if none)"/></div>
+        <div class="field full"><label>Chronic Conditions</label><input type="text" id="patient-conditions" placeholder="e.g. Diabetes Type 2, Hypertension, Asthma"/></div>
+        <div class="field"><label>Weight (kg)</label><input type="number" id="patient-weight" placeholder="70" step="0.1"/></div>
+        <div class="field"><label>Height (cm)</label><input type="number" id="patient-height" placeholder="170"/></div>
+
+        <div class="form-section-title">Insurance & Admin</div>
+        <div class="field full"><label>Insurance ID / Policy Number</label><input type="text" id="patient-insurance" placeholder="e.g. LIC-123456 or leave blank"/></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal('patient-modal')">Cancel</button><button class="btn btn-save" onclick="savePatient()">💾 Save Patient</button></div>
+  </div>
+</div>
+
+<!-- Doctor Modal v5 — Extended Fields -->
+<div class="modal-overlay" id="doctor-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3 id="doctor-modal-title">Add New Doctor</h3>
+      <button class="modal-close" onclick="closeModal('doctor-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="doctor-id"/>
+      <div class="form-grid">
+        <div class="form-section-title">Professional Details</div>
+        <div class="field full"><label>Full Name *</label><input type="text" id="doctor-name" placeholder="Dr. Full Name"/></div>
+        <div class="field"><label>Specialization</label><input type="text" id="doctor-spec" placeholder="Cardiology, Neurology..."/></div>
+        <div class="field"><label>Qualification</label><input type="text" id="doctor-qualification" placeholder="MBBS, MD, MS..."/></div>
+        <div class="field"><label>Experience (Years)</label><input type="number" id="doctor-exp" placeholder="5" min="0"/></div>
+        <div class="field"><label>Registration Number</label><input type="text" id="doctor-reg" placeholder="MCI-XXXXX"/></div>
+        <div class="field"><label>Consultation Fee (₹)</label><input type="number" id="doctor-fee" placeholder="500"/></div>
+        <div class="form-section-title">Contact & Schedule</div>
+        <div class="field"><label>Phone</label><input type="tel" id="doctor-phone" placeholder="+91 XXXXX XXXXX"/></div>
+        <div class="field"><label>Email</label><input type="email" id="doctor-email" placeholder="doctor@hospital.com"/></div>
+        <div class="field full"><label>Availability</label><input type="text" id="doctor-availability" placeholder="Mon-Fri 10AM-4PM, Sat 10AM-1PM"/></div>
+        <div class="field full"><label>Short Bio</label><textarea id="doctor-bio" style="min-height:60px" placeholder="Brief professional background..."></textarea></div>
+      </div>
+      <!-- Credentials box shown after new doctor save -->
+      <div id="doctor-creds-box" class="creds-box" style="display:none;margin-top:16px">
+        <div class="creds-box-title">🔑 Doctor Login Credentials — Share with Doctor</div>
+        <div class="creds-row">
+          <span class="creds-label">Email</span>
+          <span class="creds-value" id="creds-email">—</span>
+          <button class="creds-copy" onclick="copyCredential('creds-email')" title="Copy">📋</button>
+        </div>
+        <div class="creds-row">
+          <span class="creds-label">Password</span>
+          <span class="creds-value" id="creds-password">—</span>
+          <button class="creds-copy" onclick="copyCredential('creds-password')" title="Copy">📋</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">⚠ Ask doctor to change password on first login.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('doctor-modal')">Cancel</button>
+      <button class="btn btn-save" onclick="saveDoctor()">💾 Save Doctor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Modal -->
+<div class="modal-overlay" id="appt-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="appt-modal-title">New Appointment</h3><button class="modal-close" onclick="closeModal('appt-modal')">✕</button></div>
+    <div class="modal-body"><input type="hidden" id="appt-id"/>
+      <div class="form-grid">
+        <div class="field"><label>Patient *</label><select id="appt-patient"><option value="">Loading...</option></select></div>
+        <div class="field"><label>Doctor *</label><select id="appt-doctor"><option value="">Loading...</option></select></div>
+        <div class="field"><label>Date *</label><input type="date" id="appt-date"/></div>
+        <div class="field"><label>Time</label><input type="time" id="appt-time"/></div>
+        <div class="field"><label>Status</label><select id="appt-status"><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
+        <div class="field full"><label>Notes</label><textarea id="appt-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal('appt-modal')">Cancel</button><button class="btn btn-save" onclick="saveAppt()">Save</button></div>
+  </div>
+</div>
+
+<!-- Bill Modal (v4 - Auto Calculation + Item Builder) -->
+<div class="modal-overlay" id="bill-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <h3 id="bill-modal-title">New Bill</h3>
+      <button class="modal-close" onclick="closeModal('bill-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bill-id"/>
+      <div class="form-grid" style="margin-bottom:16px">
+        <div class="field">
+          <label>Patient *</label>
+          <select id="bill-patient"><option value="">Loading...</option></select>
+        </div>
+        <div class="field">
+          <label>Link Appointment</label>
+          <select id="bill-appointment"><option value="">— No appointment link —</option></select>
+        </div>
+      </div>
+
+      <!-- Bill Items Builder -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:10px">Bill Items</label>
+        <div id="bill-items-container"></div>
+      </div>
+
+      <!-- Auto-calculated totals -->
+      <div style="background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:16px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px;color:var(--muted)">Total Amount</span>
+          <span style="font-size:18px;font-weight:800;color:var(--text)" id="bill-total-display">₹0</span>
+        </div>
+        <div style="height:1px;background:var(--border);margin-bottom:8px"></div>
+        <div class="form-grid" style="gap:10px">
+          <div class="field">
+            <label>Amount Paid (₹)</label>
+            <input type="number" id="bill-paid" placeholder="0" min="0" oninput="recalcBill()" style="font-size:16px;font-weight:700"/>
+          </div>
+          <div class="field">
+            <label>Payment Method</label>
+            <select id="bill-method" style="height:44px">
+              <option value="">Select method</option>
+              <option>Cash</option><option>UPI</option><option>Card</option><option>Net Banking</option><option>Insurance</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Balance Due</span>
+          <span style="font-size:20px;font-weight:800" id="bill-due-display">₹0</span>
+        </div>
+        <div style="margin-top:10px">
+          <span style="font-size:11.5px;color:var(--muted)">Status (auto): </span>
+          <select id="bill-status" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card);color:var(--text)">
+            <option value="pending">Pending</option><option value="partial">Partial</option><option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="bill-notes" placeholder="Any additional billing notes..." style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('bill-modal')">Cancel</button>
+      <button class="btn btn-save" onclick="saveBill()">💾 Save Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lab Modal -->
+<div class="modal-overlay" id="lab-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="lab-modal-title">New Lab Report</h3><button class="modal-close" onclick="closeModal('lab-modal')">✕</button></div>
+    <div class="modal-body"><input type="hidden" id="lab-id"/>
+      <div class="form-grid">
+        <div class="field"><label>Patient *</label><select id="lab-patient"><option value="">Loading...</option></select></div>
+        <div class="field"><label>Doctor</label><select id="lab-doctor"><option value="">Loading...</option></select></div>
+        <div class="field"><label>Test Name *</label><input type="text" id="lab-test"/></div>
+        <div class="field"><label>Test Date</label><input type="date" id="lab-date"/></div>
+        <div class="field"><label>Status</label><select id="lab-status"><option value="pending">Pending</option><option value="completed">Completed</option></select></div>
+        <div class="field full"><label>Result</label><textarea id="lab-result"></textarea></div>
+        <div class="field full"><label>Notes</label><textarea id="lab-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal('lab-modal')">Cancel</button><button class="btn btn-save" onclick="saveReport()">Save Report</button></div>
+  </div>
+</div>
+
+<!-- Medicine Modal -->
+<div class="modal-overlay" id="med-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="med-modal-title">Add Medicine</h3><button class="modal-close" onclick="closeModal('med-modal')">✕</button></div>
+    <div class="modal-body"><input type="hidden" id="med-id"/>
+      <div class="form-grid">
+        <div class="field full"><label>Medicine Name *</label><input type="text" id="med-name"/></div>
+        <div class="field full"><label>Generic Name</label><input type="text" id="med-generic"/></div>
+        <div class="field"><label>Category</label><input type="text" id="med-category"/></div>
+        <div class="field"><label>Manufacturer</label><input type="text" id="med-manufacturer"/></div>
+        <div class="field"><label>Stock Quantity</label><input type="number" id="med-stock"/></div>
+        <div class="field"><label>Unit Price (₹)</label><input type="number" id="med-price" step="0.01"/></div>
+        <div class="field"><label>Expiry Date</label><input type="date" id="med-expiry"/></div>
+        <div class="field full"><label>Image URL</label><input type="url" id="med-image" placeholder="https://images.unsplash.com/..."/></div>
+        <div class="field full"><label>Description</label><textarea id="med-desc"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal('med-modal')">Cancel</button><button class="btn btn-save" onclick="saveMed()">Save Medicine</button></div>
+  </div>
+</div>
+
+<!-- History Record Modal -->
+<div class="modal-overlay" id="history-record-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>Add Medical Record</h3><button class="modal-close" onclick="closeModal('history-record-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="hr-patient-id"/>
+      <div class="form-grid">
+        <div class="field"><label>Record Type</label>
+          <select id="hr-type"><option value="visit">OPD Visit</option><option value="surgery">Surgery</option><option value="lab">Lab Test</option><option value="medicine">Medication</option><option value="allergy">Allergy</option></select>
+        </div>
+        <div class="field"><label>Date</label><input type="date" id="hr-date"/></div>
+        <div class="field full"><label>Title *</label><input type="text" id="hr-title" placeholder="e.g. Follow-up for diabetes"/></div>
+        <div class="field full"><label>Description</label><textarea id="hr-desc" placeholder="Details..."></textarea></div>
+        <div class="field full"><label>Doctor Notes</label><textarea id="hr-notes" placeholder="Doctor observations..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal('history-record-modal')">Cancel</button><button class="btn btn-save" onclick="saveHistoryRecord()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- Doctor Schedule Slot Modal -->
+<div class="modal-overlay" id="slot-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><h3 id="slot-modal-title">Add Schedule Slot</h3><button class="modal-close" onclick="closeModal('slot-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="slot-id"/>
+      <input type="hidden" id="slot-doctor-id"/>
+      <div class="form-grid">
+        <div class="field"><label>Day</label><select id="slot-day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></div>
+        <div class="field"><label>Slot Type</label><select id="slot-type"><option value="available">Available</option><option value="break">Break</option><option value="leave">Leave</option></select></div>
+        <div class="field"><label>Start Time</label><input type="time" id="slot-start"/></div>
+        <div class="field"><label>End Time</label><input type="time" id="slot-end"/></div>
+        <div class="field full"><label>Notes</label><input type="text" id="slot-notes" placeholder="e.g. OPD Consulting"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="deleteSlot()" style="background:rgba(239,68,68,0.1);color:var(--danger);border-color:var(--danger)">🗑 Remove</button>
+      <button class="btn btn-cancel" onclick="closeModal('slot-modal')">Cancel</button>
+      <button class="btn btn-save" onclick="saveSlot()">Save Slot</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prescription Builder Modal -->
+<div class="modal-overlay" id="rx-modal">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-header"><h3>New Prescription ℞</h3><button class="modal-close" onclick="closeModal('rx-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="rx-builder">
+        <div class="rx-header-fields">
+          <div class="field"><label>Patient *</label><select id="rx-patient"><option value="">Loading...</option></select></div>
+          <div class="field"><label>Doctor *</label><select id="rx-doctor"><option value="">Loading...</option></select></div>
+          <div class="field"><label>Date</label><input type="date" id="rx-date"/></div>
+        </div>
+        <div class="field" style="margin-bottom:16px"><label>Diagnosis</label><input type="text" id="rx-diagnosis" placeholder="e.g. Viral Fever, Hypertension..."/></div>
+        <div id="rx-med-rows"></div>
+        <div class="field" style="margin-top:16px"><label>Special Instructions / Notes</label><textarea id="rx-notes" placeholder="Take after meals, avoid alcohol..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal('rx-modal')">Cancel</button><button class="btn btn-save" onclick="saveRx()">💾 Save & Print</button></div>
+  </div>
+</div>
+
+
+<!-- Dispense Modal -->
+<div class="modal-overlay" id="dispense-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3>💊 Dispense Medicine</h3>
+      <button class="modal-close" onclick="closeModal('dispense-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="dispense-preview">
+        <div class="dispense-med-name" id="dispense-med-name">Medicine Name</div>
+        <div class="dispense-med-info" id="dispense-med-info">Info</div>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Select Patient *</label>
+          <select id="dispense-patient"><option value="">Loading...</option></select>
+        </div>
+        <div class="field">
+          <label>Quantity *</label>
+          <input type="number" id="dispense-qty" value="1" min="1" oninput="updateDispenseCalc(); document.getElementById('dispense-qty-display').textContent=this.value" style="font-size:18px;font-weight:800;text-align:center"/>
+        </div>
+        <div class="field full">
+          <label>Notes (optional)</label>
+          <input type="text" id="dispense-notes" placeholder="e.g. Prescribed by Dr. Kumar"/>
+        </div>
+      </div>
+      <div class="dispense-calc">
+        <div class="dispense-calc-row"><span>Unit Price</span><span id="dispense-unit-price">₹0</span></div>
+        <div class="dispense-calc-row"><span>Quantity</span><span id="dispense-qty-display">1</span></div>
+        <div class="dispense-calc-total"><span>Total Amount</span><span id="dispense-total">₹0</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px;background:rgba(16,185,129,0.08);border-radius:9px;border:1px solid rgba(16,185,129,0.2)">
+        <input type="checkbox" id="dispense-auto-bill" checked style="width:18px;height:18px;accent-color:var(--success);cursor:pointer"/>
+        <label for="dispense-auto-bill" style="font-size:13px;font-weight:600;color:#059669;cursor:pointer">
+          ✅ Auto-generate billing entry after dispense
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('dispense-modal')">Cancel</button>
+      <button class="btn btn-save" onclick="saveDispense()" style="background:linear-gradient(135deg,#10b981,#059669)">💊 Dispense Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Automation Popup -->
+<div class="automation-popup" id="automation-popup">
+  <div class="auto-popup-title">⚡ Quick Action</div>
+  <div class="auto-popup-sub">Appointment completed. Create prescription & bill?</div>
+  <div class="auto-popup-actions">
+    <button class="btn-auto-yes" onclick="doAutoActions()">💊 Yes, Open Prescription</button>
+    <button class="btn-auto-no"  onclick="dismissAutomationPopup()">Later</button>
+  </div>
+</div>
+
+
+<!-- Rx → Bill Modal -->
+<div class="modal-overlay" id="rxbill-modal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h3>💰 Generate Bill from Prescription</h3>
+      <button class="modal-close" onclick="closeModal('rxbill-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rxbill-rx-id"/>
+      <input type="hidden" id="rxbill-patient-id"/>
+      <input type="hidden" id="rxbill-total"/>
+      <input type="hidden" id="rxbill-items-json"/>
+      <input type="hidden" id="rxbill-method"/>
+
+      <!-- Bill Preview (injected by JS) -->
+      <div id="rxbill-preview"></div>
+
+      <!-- Payment Method -->
+      <div style="margin-top:16px">
+        <div style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">Select Payment Method</div>
+        <div class="pay-method-grid">
+          <button class="pay-method-btn" onclick="selectPayMethod('Cash', this)"><span class="pay-method-icon">💵</span><span class="pay-method-label">Cash</span></button>
+          <button class="pay-method-btn" onclick="selectPayMethod('UPI', this)"><span class="pay-method-icon">📱</span><span class="pay-method-label">UPI</span></button>
+          <button class="pay-method-btn" onclick="selectPayMethod('Card', this)"><span class="pay-method-icon">💳</span><span class="pay-method-label">Card</span></button>
+          <button class="pay-method-btn" onclick="selectPayMethod('Insurance', this)"><span class="pay-method-icon">🛡️</span><span class="pay-method-label">Insurance</span></button>
+        </div>
+      </div>
+
+      <!-- Pay Now checkbox -->
+      <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;background:rgba(16,185,129,0.06);border-radius:9px;border:1px solid rgba(16,185,129,0.15)">
+        <input type="checkbox" id="rxbill-paid-now" checked style="width:18px;height:18px;accent-color:#059669;cursor:pointer"/>
+        <label for="rxbill-paid-now" style="font-size:13px;font-weight:600;color:#059669;cursor:pointer;flex:1">
+          ✅ Patient paying now — mark as PAID
+        </label>
+        <span id="rxbill-total-display" style="font-family:'Sora',sans-serif;font-size:18px;font-weight:800;color:#059669">₹0</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('rxbill-modal')">Cancel</button>
+      <button class="btn-pay-now" onclick="saveBillFromRx()">💰 Confirm & Generate Bill</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/auth.js"></script>
+<script src="js/cache.js"></script>
+<script src="js/rbac.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/patients.js"></script>
+<script src="js/doctors.js"></script>
+<script src="js/appointments.js"></script>
+<script src="js/billing.js"></script>
+<script src="js/lab.js"></script>
+<script src="js/pharmacy.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/print.js"></script>
+<script src="js/medical_history.js"></script>
+<script src="js/doctor_schedule.js"></script>
+<script src="js/prescription.js"></script>
+<script src="js/app.js"></script>
+<script>
+  document.getElementById('dash-date').textContent =
+    'Welcome back! Today is ' + new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+</script>
+</body>
+</html>

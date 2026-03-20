@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MediCare HMS — Login</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <style>
+    :root {
+      --admin-color: #0ea5e9;
+      --doctor-color: #10b981;
+    }
+
+    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .login-page { min-height: 100vh; display: flex; }
+
+    /* ── Left Panel ── */
+    .login-left {
+      flex: 1.1;
+      background: #0d1b2a;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-left::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14,165,233,0.15) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: orb 6s ease-in-out infinite;
+    }
+
+    .login-left::after {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+      bottom: 15%; right: 10%;
+      animation: orb 4s ease-in-out infinite reverse;
+    }
+
+    @keyframes orb {
+      0%,100% { transform: translate(-50%,-50%) scale(1); }
+      50%      { transform: translate(-50%,-50%) scale(1.12); }
+    }
+
+    .login-brand { position: relative; z-index: 1; text-align: center; width: 100%; max-width: 380px; }
+
+    .login-logo-wrap {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px;
+      margin: 0 auto 24px;
+      box-shadow: 0 12px 40px rgba(14,165,233,0.4);
+    }
+
+    .login-brand-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .login-brand-sub {
+      color: rgba(255,255,255,0.42);
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .login-features { display: flex; flex-direction: column; gap: 14px; text-align: left; width: 100%; }
+
+    .lf-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255,255,255,0.65);
+      font-size: 13.5px;
+    }
+
+    .lf-icon {
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .lf-icon.blue   { background: rgba(14,165,233,0.2); }
+    .lf-icon.green  { background: rgba(16,185,129,0.2); }
+    .lf-icon.purple { background: rgba(139,92,246,0.2); }
+    .lf-icon.amber  { background: rgba(245,158,11,0.2); }
+
+    .lf-text strong { color: #fff; font-weight: 700; display: block; margin-bottom: 1px; }
+    .lf-text span   { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+    /* ── Right Panel ── */
+    .login-right {
+      width: 480px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 52px 48px;
+      overflow-y: auto;
+    }
+
+    .lrp-header { margin-bottom: 32px; }
+    .lrp-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(14,165,233,0.1);
+      color: #0284c7;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 14px;
+    }
+
+    .lrp-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: #1a2535;
+      margin-bottom: 6px;
+    }
+
+    .lrp-sub { color: #64748b; font-size: 14px; }
+
+    /* Tab switch */
+    .tab-switch { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 24px; gap: 4px; }
+    .tab-btn {
+      flex: 1; padding: 9px; background: transparent; border: none;
+      border-radius: 7px; cursor: pointer; font-size: 13.5px;
+      font-family: inherit; font-weight: 600; color: #64748b; transition: all 0.2s;
+    }
+    .tab-btn.active { background: #0ea5e9; color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,0.35); }
+
+    /* Alert */
+    .alert-box { padding: 11px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none; }
+    .alert-box.show { display: flex; align-items: center; gap: 8px; }
+    .alert-box.error   { background: rgba(239,68,68,0.08); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+    .alert-box.success { background: rgba(16,185,129,0.08); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+
+    /* Input group */
+    .inp-group { margin-bottom: 18px; }
+    .inp-group label { display: block; font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; }
+    .inp-wrap { position: relative; }
+    .inp-wrap input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #e1e8f0; border-radius: 9px;
+      font-family: inherit; font-size: 14px; color: #1a2535;
+      background: #fff; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .inp-wrap input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
+    .inp-wrap input.err { border-color: #ef4444; }
+    .inp-wrap .eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 17px; }
+    .inp-wrap select {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #e1e8f0; border-radius: 9px;
+      font-family: inherit; font-size: 14px; color: #1a2535;
+      background: #fff; outline: none; cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .field-err { font-size: 11.5px; color: #ef4444; margin-top: 5px; display: none; }
+    .field-err.show { display: block; }
+
+    /* Password strength */
+    .pwd-strength-bar { height: 4px; border-radius: 2px; background: #e1e8f0; margin-top: 7px; }
+    .pwd-strength-fill { height: 100%; border-radius: 2px; width: 0; transition: all 0.3s; }
+    .pwd-strength-label { font-size: 11px; margin-top: 4px; display: none; }
+
+    /* ── DEMO LOGIN SECTION ── */
+    .demo-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0 16px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .demo-divider::before,
+    .demo-divider::after { content: ''; flex: 1; height: 1px; background: #e1e8f0; }
+
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+
+    .demo-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 12px;
+      border: 2px solid #e1e8f0;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .demo-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .demo-btn.admin::before  { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+    .demo-btn.doctor::before { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    .demo-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+
+    .demo-btn.admin:hover  { border-color: #0ea5e9; background: rgba(14,165,233,0.03); }
+    .demo-btn.doctor:hover { border-color: #10b981; background: rgba(16,185,129,0.03); }
+
+    .demo-role-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+
+    .demo-btn.admin  .demo-role-icon { background: rgba(14,165,233,0.1); }
+    .demo-btn.doctor .demo-role-icon { background: rgba(16,185,129,0.1); }
+
+    .demo-role-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a2535;
+    }
+
+    .demo-btn.admin  .demo-role-name { color: #0284c7; }
+    .demo-btn.doctor .demo-role-name { color: #059669; }
+
+    .demo-role-desc {
+      font-size: 10.5px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .demo-access-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .demo-pill {
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    .demo-btn.admin  .demo-pill { background: rgba(14,165,233,0.1); color: #0284c7; }
+    .demo-btn.doctor .demo-pill { background: rgba(16,185,129,0.1); color: #059669; }
+
+    /* Login button */
+    .login-submit {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      border: none; border-radius: 9px;
+      color: #fff; font-family: inherit;
+      font-size: 14.5px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(14,165,233,0.4);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    .login-submit:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+    .login-submit:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    .btn-spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .login-submit.loading .btn-spinner { display: block; }
+    .login-submit.loading .btn-text { opacity: 0.8; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .login-footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px; }
+
+    @media (max-width: 860px) {
+      .login-left  { display: none; }
+      .login-right { width: 100%; padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="login-page">
+
+  <!-- ══ LEFT ══ -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-logo-wrap">🏥</div>
+      <div class="login-brand-title">MediCare Hospital Management System</div>
+      <div class="login-brand-sub">A complete digital solution for modern hospitals — built for final year project 2025.</div>
+
+      <div class="login-features">
+        <div class="lf-item">
+          <div class="lf-icon blue">🧑‍⚕️</div>
+          <div class="lf-text">
+            <strong>Patient Management</strong>
+            <span>Registration, history, medical records</span>
+          </div>
+        </div>
+        <div class="lf-item">
+          <div class="lf-icon green">💊</div>
+          <div class="lf-text">
+            <strong>Prescription → Auto Bill</strong>
+            <span>Medicine prices auto-fetch from pharmacy</span>
+          </div>
+        </div>
+        <div class="lf-item">
+          <div class="lf-icon purple">📈</div>
+          <div class="lf-text">
+            <strong>Analytics Dashboard</strong>
+            <span>Live charts, revenue, appointment trends</span>
+          </div>
+        </div>
+        <div class="lf-item">
+          <div class="lf-icon amber">🔐</div>
+          <div class="lf-text">
+            <strong>Role-Based Access</strong>
+            <span>Admin & Doctor — separate views</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT ══ -->
+  <div class="login-right">
+
+    <div class="lrp-header">
+      <div class="lrp-pill">🔒 Secure Login</div>
+      <div class="lrp-title">Welcome Back</div>
+      <div class="lrp-sub">Sign in to your hospital account</div>
+    </div>
+
+    <div class="tab-switch">
+      <button class="tab-btn active" id="tab-login"  onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn"        id="tab-signup" onclick="switchTab('signup')">Register</button>
+    </div>
+
+    <div class="alert-box" id="alert-box"></div>
+
+    <!-- ══ SIGN IN FORM ══ -->
+    <div id="form-login">
+      <div class="inp-group">
+        <label>Email Address</label>
+        <div class="inp-wrap">
+          <input type="email" id="login-email" placeholder="admin@hospital.com" onkeydown="if(event.key==='Enter')handleLogin()" oninput="clearErr(this)"/>
+        </div>
+        <div class="field-err" id="err-login-email">Please enter a valid email</div>
+      </div>
+      <div class="inp-group">
+        <label>Password</label>
+        <div class="inp-wrap">
+          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()" oninput="clearErr(this)"/>
+          <button class="eye-btn" type="button" onclick="toggleEye('login-password',this)">👁️</button>
+        </div>
+        <div class="field-err" id="err-login-password">Password cannot be empty</div>
+      </div>
+
+      <!-- ── DEMO LOGIN ── -->
+      <div class="demo-divider">⚡ Quick Demo Login</div>
+
+      <div class="demo-grid">
+        <button class="demo-btn admin" onclick="demoLogin('admin')">
+          <div class="demo-role-icon">🏥</div>
+          <div class="demo-role-name">Admin</div>
+          <div class="demo-access-pills">
+            <span class="demo-pill">All Modules</span>
+            <span class="demo-pill">Full Access</span>
+          </div>
+          <div class="demo-role-desc">Patients · Doctors · Billing · Pharmacy · Reports</div>
+        </button>
+
+        <button class="demo-btn doctor" onclick="demoLogin('doctor')">
+          <div class="demo-role-icon">👨‍⚕️</div>
+          <div class="demo-role-name">Doctor</div>
+          <div class="demo-access-pills">
+            <span class="demo-pill">Clinical</span>
+            <span class="demo-pill">Prescriptions</span>
+          </div>
+          <div class="demo-role-desc">Patients · Appointments · Prescriptions · Schedule</div>
+        </button>
+      </div>
+
+      <button class="login-submit" id="login-btn" onclick="handleLogin()">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">Sign In →</span>
+      </button>
+    </div>
+
+    <!-- ══ REGISTER FORM ══ -->
+    <div id="form-signup" style="display:none">
+      <div class="inp-group">
+        <label>Full Name</label>
+        <div class="inp-wrap"><input type="text" id="signup-name" placeholder="Dr. Rajesh Kumar" oninput="clearErr(this)"/></div>
+        <div class="field-err" id="err-signup-name">Name is required</div>
+      </div>
+      <div class="inp-group">
+        <label>Email Address</label>
+        <div class="inp-wrap"><input type="email" id="signup-email" placeholder="doctor@hospital.com" oninput="clearErr(this)"/></div>
+        <div class="field-err" id="err-signup-email">Valid email required</div>
+      </div>
+      <div class="inp-group">
+        <label>Password</label>
+        <div class="inp-wrap">
+          <input type="password" id="signup-password" placeholder="Min 6 characters" oninput="clearErr(this); pwdStrength(this.value)"/>
+          <button class="eye-btn" type="button" onclick="toggleEye('signup-password',this)">👁️</button>
+        </div>
+        <div class="field-err" id="err-signup-password">Min 6 characters required</div>
+        <div class="pwd-strength-bar"><div class="pwd-strength-fill" id="pwd-fill"></div></div>
+        <div class="pwd-strength-label" id="pwd-label"></div>
+      </div>
+      <div class="inp-group">
+        <label>Role</label>
+        <div class="inp-wrap">
+          <select id="signup-role">
+            <option value="admin">🏥 Admin — Full Access</option>
+            <option value="doctor">👨‍⚕️ Doctor — Clinical Access</option>
+          </select>
+        </div>
+      </div>
+      <button class="login-submit" id="signup-btn" onclick="handleSignup()">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">Create Account →</span>
+      </button>
+    </div>
+
+    <div class="login-footer">
+      © 2025 MediCare HMS · Final Year Project · Satyam College, Bidar
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+// ── Tab switch ──────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('form-login').style.display   = tab === 'login'  ? 'block' : 'none';
+  document.getElementById('form-signup').style.display  = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-login').classList.toggle('active',  tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  hideAlert();
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+function showAlert(msg, type = 'error') {
+  const el = document.getElementById('alert-box');
+  el.innerHTML = (type === 'error' ? '⚠ ' : '✓ ') + msg;
+  el.className = `alert-box show ${type}`;
+}
+function hideAlert() { document.getElementById('alert-box').className = 'alert-box'; }
+
+function clearErr(input) {
+  input.classList.remove('err');
+  const id = 'err-' + input.id.replace('login-','login-').replace('signup-','signup-');
+  const el = document.getElementById(id.replace(input.id, input.id));
+  document.getElementById('err-' + input.id)?.classList.remove('show');
+  hideAlert();
+}
+
+function showFieldErr(inputId, msg) {
+  const inp = document.getElementById(inputId);
+  const err = document.getElementById('err-' + inputId);
+  inp?.classList.add('err');
+  if (err && msg) err.textContent = msg;
+  err?.classList.add('show');
+}
+
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+}
+
+function toggleEye(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+function pwdStrength(pwd) {
+  const fill = document.getElementById('pwd-fill');
+  const label = document.getElementById('pwd-label');
+  if (!pwd) { fill.style.width = '0'; label.style.display = 'none'; return; }
+  label.style.display = 'block';
+  let score = [pwd.length >= 6, pwd.length >= 10, /[A-Z]/.test(pwd), /[0-9]/.test(pwd), /[^a-zA-Z0-9]/.test(pwd)].filter(Boolean).length;
+  const levels = [
+    { w:'20%', bg:'#ef4444', text:'Weak' },
+    { w:'40%', bg:'#f59e0b', text:'Fair' },
+    { w:'60%', bg:'#f59e0b', text:'Good' },
+    { w:'80%', bg:'#10b981', text:'Strong' },
+    { w:'100%',bg:'#059669', text:'Very Strong' },
+  ];
+  const lvl = levels[Math.min(score - 1, 4)] || levels[0];
+  fill.style.width = lvl.w;
+  fill.style.background = lvl.bg;
+  label.textContent = lvl.text;
+  label.style.color = lvl.bg;
+}
+
+function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+// ── Login ────────────────────────────────────────────────────
+async function handleLogin() {
+  hideAlert();
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-password').value;
+  let ok = true;
+  if (!isEmail(email)) { showFieldErr('login-email', 'Enter a valid email address'); ok = false; }
+  if (!pwd)             { showFieldErr('login-password', 'Password cannot be empty'); ok = false; }
+  if (!ok) return;
+
+  setLoading('login-btn', true);
+  try {
+    await signIn(email, pwd);
+    showAlert('Login successful! Loading...', 'success');
+    setTimeout(() => window.location.href = 'app.html', 600);
+  } catch(e) {
+    const msg = (e.message||'').toLowerCase().includes('invalid') ? 'Incorrect email or password.' : (e.message || 'Login failed');
+    showAlert(msg, 'error');
+    setLoading('login-btn', false);
+  }
+}
+
+// ── Demo Login ───────────────────────────────────────────────
+async function demoLogin(role) {
+  const creds = {
+    admin:  { email: 'admin@medicare.demo', password: 'Admin@123', name: 'Admin User' },
+    doctor: { email: 'doctor@medicare.demo', password: 'Doctor@123', name: 'Dr. Demo Doctor' },
+  };
+  const c = creds[role];
+  hideAlert();
+  showAlert(`Logging in as ${role === 'admin' ? '🏥 Admin' : '👨‍⚕️ Doctor'}...`, 'success');
+  setLoading('login-btn', true);
+
+  try {
+    await signIn(c.email, c.password);
+    window.location.href = 'app.html';
+  } catch(e) {
+    // If demo user doesn't exist, create it
+    if ((e.message||'').toLowerCase().includes('invalid') || (e.message||'').toLowerCase().includes('not found')) {
+      try {
+        showAlert(`Creating demo ${role} account...`, 'success');
+        await signUp(c.email, c.password, c.name, role);
+        // Wait for profile to be created then sign in
+        await new Promise(r => setTimeout(r, 1500));
+        await signIn(c.email, c.password);
+        window.location.href = 'app.html';
+      } catch(e2) {
+        showAlert('Demo login failed. Please register manually.', 'error');
+        // Pre-fill form for manual registration
+        switchTab('signup');
+        document.getElementById('signup-name').value = c.name;
+        document.getElementById('signup-email').value = c.email;
+        document.getElementById('signup-role').value = role;
+        showAlert(`Pre-filled ${role} credentials. Enter password: ${c.password}`, 'success');
+      }
+    } else {
+      showAlert(e.message || 'Demo login failed', 'error');
+    }
+    setLoading('login-btn', false);
+  }
+}
+
+// ── Register ─────────────────────────────────────────────────
+async function handleSignup() {
+  hideAlert();
+  const name  = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pwd   = document.getElementById('signup-password').value;
+  const role  = document.getElementById('signup-role').value;
+  let ok = true;
+  if (!name)         { showFieldErr('signup-name', 'Full name is required'); ok = false; }
+  if (!isEmail(email)){ showFieldErr('signup-email', 'Valid email required'); ok = false; }
+  if (pwd.length < 6){ showFieldErr('signup-password', 'Min 6 characters'); ok = false; }
+  if (!ok) return;
+
+  setLoading('signup-btn', true);
+  try {
+    await signUp(email, pwd, name, role);
+    showAlert('Account created! Check email to confirm, then sign in.', 'success');
+    setTimeout(() => { switchTab('login'); document.getElementById('login-email').value = email; }, 2200);
+  } catch(e) {
+    const msg = (e.message||'').includes('already') ? 'This email is already registered.' : (e.message||'Registration failed');
+    showAlert(msg, 'error');
+  } finally {
+    setLoading('signup-btn', false);
+  }
+}
+
+// Auto redirect if already logged in
+getSession().then(s => { if (s) window.location.href = 'app.html'; });
+</script>
+</body>
+</html>
