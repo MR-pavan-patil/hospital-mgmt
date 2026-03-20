@@ -273,16 +273,34 @@ ORDER BY total_appointments DESC;
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_role TEXT;
+  v_name TEXT;
+  v_doctor_name TEXT;
 BEGIN
+  -- Check if this email exists in doctors table → auto-assign doctor role
+  SELECT name INTO v_doctor_name
+  FROM public.doctors
+  WHERE LOWER(TRIM(email)) = LOWER(TRIM(NEW.email))
+     OR LOWER(TRIM(email)) = LOWER(TRIM(NEW.raw_user_meta_data->>'email'))
+  LIMIT 1;
+
+  IF v_doctor_name IS NOT NULL THEN
+    -- This is a registered doctor
+    v_role := 'doctor';
+    v_name := v_doctor_name;
+  ELSE
+    -- Use metadata role (default admin)
+    v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'admin');
+    v_name := COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email,'@',1));
+  END IF;
+
   INSERT INTO public.profiles (id, name, role)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email,'@',1)),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'admin')
-  )
+  VALUES (NEW.id, v_name, v_role)
   ON CONFLICT (id) DO UPDATE
     SET name = EXCLUDED.name,
         role = EXCLUDED.role;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -361,6 +379,56 @@ CREATE TRIGGER on_auth_user_created
 -- SELECT p.name, p.role, u.email, u.created_at
 -- FROM profiles p JOIN auth.users u ON p.id = u.id
 -- ORDER BY p.role, p.name;
+
+
+-- ══════════════════════════════════════════════════
+-- SECTION H: SAMPLE DATA — 10 Doctors + 20 Patients
+-- Run this ONCE after setting up tables
+-- ══════════════════════════════════════════════════
+
+-- === 10 Sample Doctors ===
+INSERT INTO doctors (name, specialization, phone, email, fee, qualification, experience_years, reg_number, availability, login_password) VALUES
+('Dr. Rajesh Sharma',    'Cardiologist',      '9876543210', 'rajesh.sharma@medicare.demo',    800,  'MBBS, MD (Cardiology)',    15, 'MCI-KA-2009-1234', 'Mon-Fri 9AM-2PM',   'MediCare@Rajesh4521'),
+('Dr. Priya Nair',       'Gynaecologist',     '9876543211', 'priya.nair@medicare.demo',       700,  'MBBS, MS (OBG)',           12, 'MCI-KA-2012-2345', 'Mon-Sat 10AM-4PM',  'MediCare@Priya7832'),
+('Dr. Suresh Patil',     'Neurologist',       '9876543212', 'suresh.patil@medicare.demo',     900,  'MBBS, DM (Neurology)',     18, 'MCI-KA-2006-3456', 'Tue-Sat 11AM-3PM',  'MediCare@Suresh3901'),
+('Dr. Anita Desai',      'Paediatrician',     '9876543213', 'anita.desai@medicare.demo',      600,  'MBBS, MD (Paediatrics)',   10, 'MCI-KA-2014-4567', 'Mon-Fri 9AM-1PM',   'MediCare@Anita6213'),
+('Dr. Vikram Reddy',     'Orthopaedic',       '9876543214', 'vikram.reddy@medicare.demo',     750,  'MBBS, MS (Ortho)',         14, 'MCI-KA-2010-5678', 'Mon-Wed-Fri 10AM-4PM','MediCare@Vikram8934'),
+('Dr. Meera Joshi',      'Dermatologist',     '9876543215', 'meera.joshi@medicare.demo',      650,  'MBBS, MD (Dermatology)',   8,  'MCI-KA-2016-6789', 'Mon-Sat 11AM-5PM',  'MediCare@Meera2456'),
+('Dr. Arjun Kulkarni',   'General Physician', '9876543216', 'arjun.kulkarni@medicare.demo',   500,  'MBBS, MD (General)',       6,  'MCI-KA-2018-7890', 'Mon-Sat 8AM-12PM',  'MediCare@Arjun5678'),
+('Dr. Sunita Hegde',     'ENT Specialist',    '9876543217', 'sunita.hegde@medicare.demo',     700,  'MBBS, MS (ENT)',           11, 'MCI-KA-2013-8901', 'Tue-Thu-Sat 10AM-3PM','MediCare@Sunita1234'),
+('Dr. Ravi Kumar',       'Psychiatrist',      '9876543218', 'ravi.kumar@medicare.demo',       1000, 'MBBS, MD (Psychiatry)',    20, 'MCI-KA-2004-9012', 'Mon-Fri 2PM-6PM',   'MediCare@Ravi9012'),
+('Dr. Deepa Menon',      'Radiologist',       '9876543219', 'deepa.menon@medicare.demo',      850,  'MBBS, MD (Radiology)',     13, 'MCI-KA-2011-0123', 'Mon-Fri 9AM-5PM',   'MediCare@Deepa3456')
+ON CONFLICT DO NOTHING;
+
+-- === 20 Sample Patients ===
+INSERT INTO patients (name, dob, gender, phone, email, blood_group, address, emergency_contact, allergies, chronic_conditions) VALUES
+('Pavan Patil',         '2005-05-03', 'Male',   '9606558427', 'pavan.patil@gmail.com',     'A-',  'Bidar, Karnataka',          '9876500001', NULL,           NULL),
+('Sneha Kulkarni',      '1992-08-15', 'Female', '9845632100', 'sneha.k@gmail.com',         'B+',  'Gulbarga, Karnataka',       '9876500002', 'Penicillin',   'Asthma'),
+('Rahul Desai',         '1985-03-22', 'Male',   '9987654321', 'rahul.desai@gmail.com',     'O+',  'Bidar, Karnataka',          '9876500003', NULL,           'Diabetes Type 2'),
+('Anjali Sharma',       '1998-11-10', 'Female', '9765432198', 'anjali.s@gmail.com',        'AB+', 'Latur, Maharashtra',        '9876500004', NULL,           NULL),
+('Mohd. Imran',         '1978-06-05', 'Male',   '9876541230', 'imran.m@gmail.com',         'B-',  'Bidar, Karnataka',          '9876500005', 'Sulfa drugs',  'Hypertension'),
+('Kavitha Reddy',       '2000-01-28', 'Female', '9654321780', 'kavitha.r@gmail.com',       'A+',  'Hyderabad, Telangana',      '9876500006', NULL,           NULL),
+('Sunil Nair',          '1972-09-14', 'Male',   '9543217890', 'sunil.n@gmail.com',         'O-',  'Bidar, Karnataka',          '9876500007', NULL,           'Hypertension, Diabetes'),
+('Pooja Jain',          '1995-04-30', 'Female', '9432178901', 'pooja.j@gmail.com',         'B+',  'Solapur, Maharashtra',      '9876500008', 'Aspirin',      NULL),
+('Arun Kumar',          '1965-12-08', 'Male',   '9321789012', 'arun.k@gmail.com',          'AB-', 'Bidar, Karnataka',          '9876500009', NULL,           'Heart Disease'),
+('Meena Iyer',          '2003-07-19', 'Female', '9210890123', 'meena.i@gmail.com',         'A+',  'Bangalore, Karnataka',      '9876500010', NULL,           NULL),
+('Rajan Patil',         '1988-02-25', 'Male',   '9109012345', 'rajan.p@gmail.com',         'O+',  'Bidar, Karnataka',          '9876500011', 'Ibuprofen',    NULL),
+('Lakshmi Devi',        '1980-10-12', 'Female', '9890123456', 'lakshmi.d@gmail.com',       'B+',  'Gulbarga, Karnataka',       '9876500012', NULL,           'Thyroid'),
+('Prakash Hegde',       '1970-05-20', 'Male',   '9789012345', 'prakash.h@gmail.com',       'A-',  'Bidar, Karnataka',          '9876500013', NULL,           'COPD'),
+('Sunita Rao',          '1993-08-08', 'Female', '9678901234', 'sunita.r@gmail.com',        'O+',  'Hyderabad, Telangana',      '9876500014', 'Pollen',       'Allergic Rhinitis'),
+('Vijay Malhotra',      '1960-03-15', 'Male',   '9567890123', 'vijay.m@gmail.com',         'AB+', 'Bidar, Karnataka',          '9876500015', NULL,           'Hypertension, Arthritis'),
+('Rekha Shetty',        '2001-11-22', 'Female', '9456789012', 'rekha.s@gmail.com',         'B-',  'Mangalore, Karnataka',      '9876500016', NULL,           NULL),
+('Ganesh Bhat',         '1975-07-04', 'Male',   '9345678901', 'ganesh.b@gmail.com',        'O+',  'Bidar, Karnataka',          '9876500017', 'Latex',        'Eczema'),
+('Archana Pillai',      '1990-09-18', 'Female', '9234567890', 'archana.p@gmail.com',       'A+',  'Kochi, Kerala',             '9876500018', NULL,           NULL),
+('Sanjay Verma',        '1983-04-07', 'Male',   '9123456789', 'sanjay.v@gmail.com',        'B+',  'Bidar, Karnataka',          '9876500019', NULL,           'Migraine'),
+('Nisha Gupta',         '1997-06-14', 'Female', '9012345678', 'nisha.g@gmail.com',         'AB+', 'Pune, Maharashtra',         '9876500020', 'Amoxicillin',  NULL)
+ON CONFLICT DO NOTHING;
+
+-- ══════════════════════════════════════════════════
+-- DOCTOR LOGIN CREDENTIALS TABLE (for admin reference)
+-- To view all doctor logins:
+-- SELECT name, email, login_password FROM doctors WHERE login_password IS NOT NULL;
+-- ══════════════════════════════════════════════════
 
 -- ══════════════════════════════════════════════════
 -- ✅ SETUP COMPLETE!

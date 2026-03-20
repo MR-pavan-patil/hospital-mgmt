@@ -445,32 +445,59 @@
       <input type="hidden" id="doctor-id"/>
       <div class="form-grid">
         <div class="form-section-title">Professional Details</div>
-        <div class="field full"><label>Full Name *</label><input type="text" id="doctor-name" placeholder="Dr. Full Name"/></div>
+        <div class="field full"><label>Full Name *</label><input type="text" id="doctor-name" placeholder="Dr. Rajesh Kumar"/></div>
         <div class="field"><label>Specialization</label><input type="text" id="doctor-spec" placeholder="Cardiology, Neurology..."/></div>
         <div class="field"><label>Qualification</label><input type="text" id="doctor-qualification" placeholder="MBBS, MD, MS..."/></div>
         <div class="field"><label>Experience (Years)</label><input type="number" id="doctor-exp" placeholder="5" min="0"/></div>
         <div class="field"><label>Registration Number</label><input type="text" id="doctor-reg" placeholder="MCI-XXXXX"/></div>
         <div class="field"><label>Consultation Fee (₹)</label><input type="number" id="doctor-fee" placeholder="500"/></div>
-        <div class="form-section-title">Contact & Schedule</div>
+        <div class="form-section-title">Contact Details</div>
         <div class="field"><label>Phone</label><input type="tel" id="doctor-phone" placeholder="+91 XXXXX XXXXX"/></div>
-        <div class="field"><label>Email</label><input type="email" id="doctor-email" placeholder="doctor@hospital.com"/></div>
-        <div class="field full"><label>Availability</label><input type="text" id="doctor-availability" placeholder="Mon-Fri 10AM-4PM, Sat 10AM-1PM"/></div>
-        <div class="field full"><label>Short Bio</label><textarea id="doctor-bio" style="min-height:60px" placeholder="Brief professional background..."></textarea></div>
+        <div class="field"><label>Email (for login) *</label><input type="email" id="doctor-email" placeholder="doctor@hospital.com"/></div>
+        <div class="field full"><label>Availability</label><input type="text" id="doctor-availability" placeholder="Mon-Fri 10AM-4PM"/></div>
+        <div class="field full"><label>Short Bio</label><textarea id="doctor-bio" style="min-height:55px" placeholder="Brief professional background..."></textarea></div>
       </div>
-      <!-- Credentials box shown after new doctor save -->
-      <div id="doctor-creds-box" class="creds-box" style="display:none;margin-top:16px">
-        <div class="creds-box-title">🔑 Doctor Login Credentials — Share with Doctor</div>
-        <div class="creds-row">
-          <span class="creds-label">Email</span>
-          <span class="creds-value" id="creds-email">—</span>
-          <button class="creds-copy" onclick="copyCredential('creds-email')" title="Copy">📋</button>
+
+      <!-- ✅ Auto-generated credentials — shown after saving new doctor -->
+      <div id="doctor-creds-box" style="display:none;margin-top:18px;border-radius:12px;overflow:hidden;border:2px solid #10b981">
+        <div style="background:linear-gradient(135deg,#059669,#10b981);padding:14px 18px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">🎉</span>
+          <div>
+            <div style="color:#fff;font-size:14px;font-weight:800">Doctor Account Created!</div>
+            <div style="color:rgba(255,255,255,0.8);font-size:11.5px">Share these credentials with <span id="dc-name" style="font-weight:700">Doctor</span></div>
+          </div>
         </div>
-        <div class="creds-row">
-          <span class="creds-label">Password</span>
-          <span class="creds-value" id="creds-password">—</span>
-          <button class="creds-copy" onclick="copyCredential('creds-password')" title="Copy">📋</button>
+        <div style="background:#f0fdf4;padding:16px 18px">
+          <div style="font-size:12px;color:#065f46;margin-bottom:14px">
+            Doctor needs to use these to <strong>Register</strong> on the login page. System will auto-detect their role as Doctor.
+          </div>
+
+          <!-- Email row -->
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:5px">Login Email</div>
+            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #a7f3d0;border-radius:8px;padding:10px 12px">
+              <span style="font-family:monospace;font-size:14px;font-weight:700;color:#065f46;flex:1" id="dc-email">—</span>
+              <button onclick="copyText('dc-email')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#059669;padding:2px;border-radius:4px" title="Copy">📋</button>
+            </div>
+          </div>
+
+          <!-- Password row -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:5px">Auto-Generated Password</div>
+            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #a7f3d0;border-radius:8px;padding:10px 12px">
+              <span style="font-family:monospace;font-size:15px;font-weight:800;color:#065f46;flex:1;letter-spacing:1px" id="dc-password">—</span>
+              <button onclick="copyText('dc-password')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#059669;padding:2px;border-radius:4px" title="Copy">📋</button>
+            </div>
+          </div>
+
+          <!-- Steps -->
+          <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:12px;color:#065f46;line-height:1.6">
+            <strong>📋 Steps to give doctor:</strong><br/>
+            1. Open hospital login page → Click <strong>Register</strong><br/>
+            2. Enter above email + password<br/>
+            3. ✅ System auto-assigns <strong>Doctor Role</strong> — limited access only
+          </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">⚠ Ask doctor to change password on first login.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -769,6 +796,102 @@
       <button class="btn btn-cancel" onclick="closeModal('rxbill-modal')">Cancel</button>
       <button class="btn-pay-now" onclick="saveBillFromRx()">💰 Confirm & Generate Bill</button>
     </div>
+  </div>
+</div>
+
+
+<!-- Doctor Login Info Modal -->
+<div class="modal-overlay" id="doctor-login-info-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3>🔑 Doctor Login Instructions</h3>
+      <button class="modal-close" onclick="closeModal('doctor-login-info-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#f0f9ff;border:2px solid #bae6fd;border-radius:10px;padding:16px">
+        <p style="font-size:13px;color:#1e3a5f;margin-bottom:14px;line-height:1.6">
+          Share these steps with <strong id="dlinfo-name">Doctor</strong> to set up their login:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #bae6fd;font-size:12.5px;color:#1e3a5f">
+            <strong>Step 1:</strong> Open the login page → Click <strong>Register</strong>
+          </div>
+          <div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #bae6fd">
+            <div style="font-size:12.5px;color:#1e3a5f;margin-bottom:6px"><strong>Step 2:</strong> Register with this email:</div>
+            <div style="display:flex;align-items:center;gap:8px;background:#f0f7ff;border-radius:6px;padding:8px 10px">
+              <span style="font-family:monospace;font-size:14px;font-weight:700;color:#1565c0;flex:1;word-break:break-all" id="dlinfo-email">—</span>
+              <button onclick="navigator.clipboard.writeText(document.getElementById('dlinfo-email').textContent).then(()=>showToast('Copied!','success'))"
+                style="background:none;border:none;cursor:pointer;color:#1976d2;font-size:16px">📋</button>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #bae6fd;font-size:12.5px;color:#1e3a5f">
+            <strong>Step 3:</strong> Choose any password (min 6 chars)
+          </div>
+          <div style="background:#e6f7f1;border-radius:8px;padding:12px;border:1px solid rgba(0,135,90,0.2);font-size:12px;color:#005f3e;line-height:1.5">
+            ✅ <strong>Auto role assignment:</strong> Because this email is saved as a Doctor in the system,
+            they will automatically get <strong>Doctor access only</strong> — Patients, Appointments,
+            Prescriptions, Lab, Schedule. No billing, pharmacy, or admin controls.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-save" onclick="closeModal('doctor-login-info-modal')">Got it ✓</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Doctor Credentials Popup Modal -->
+<div class="modal-overlay" id="creds-popup-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3>🔑 Doctor Login Credentials</h3>
+      <button class="modal-close" onclick="closeModal('creds-popup-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#f0fdf4;border:2px solid #a7f3d0;border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:14px">
+          Credentials for <strong id="cp-name">—</strong>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:5px">Email</div>
+          <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #a7f3d0;border-radius:8px;padding:10px 12px">
+            <span style="font-family:monospace;font-size:13.5px;font-weight:700;color:#1e3a5f;flex:1;word-break:break-all" id="cp-email">—</span>
+            <button onclick="copyText('cp-email')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#059669">📋</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:5px">Password</div>
+          <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #a7f3d0;border-radius:8px;padding:10px 12px">
+            <span style="font-family:monospace;font-size:15px;font-weight:800;color:#065f46;flex:1;letter-spacing:1px" id="cp-password">—</span>
+            <button onclick="copyText('cp-password')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#059669">📋</button>
+          </div>
+        </div>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:12px;color:#1e40af;line-height:1.6">
+        <strong>How to login:</strong> Open login page → Click Register →
+        Enter this email + password → System auto-assigns <strong>Doctor Role</strong>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-save" onclick="closeModal('creds-popup-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Doctor Login Info Modal (legacy) -->
+<div class="modal-overlay" id="doctor-login-info-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>ℹ️ Doctor Login Info</h3>
+      <button class="modal-close" onclick="closeModal('doctor-login-info-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted)">Doctor: <strong id="dlinfo-name">—</strong></p>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px">Email: <strong id="dlinfo-email">—</strong></p>
+    </div>
+    <div class="modal-footer"><button class="btn btn-save" onclick="closeModal('doctor-login-info-modal')">OK</button></div>
   </div>
 </div>
 
