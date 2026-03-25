@@ -1,0 +1,32 @@
+# MediCare HMS - Requirements
+
+## System Requirements
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+- Git
+- Modern Browser (Chrome, Firefox, Edge)
+
+## npm Dependencies (auto-installed via `npm install`)
+- react@18.x
+- react-dom@18.x
+- react-router-dom@6.x
+- @supabase/supabase-js@2.x
+- recharts@2.x
+- lucide-react@latest
+- react-hot-toast@2.x
+- tailwindcss@3.x
+- vite@6.x
+- autoprefixer@10.x
+- postcss@8.x
+
+## External Services
+- Supabase (free tier) — https://supabase.com
+
+## Setup Steps
+1. cd medicare-hms
+2. npm install
+3. Configure src/lib/supabase.js with your Supabase URL and key
+4. Run SQL_SCHEMA.sql in Supabase SQL Editor
+5. Run SQL_SCHEMA_UPDATE.sql in Supabase SQL Editor
+6. npm run dev
+7. Open http://localhost:5173

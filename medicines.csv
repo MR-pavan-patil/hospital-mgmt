@@ -29,3 +29,4 @@ Vitamin D3 60K,Cholecalciferol 60000IU,Vitamin/Supplement,200,35.00,Sun Pharma,2
 Neurobion Forte,Vitamin B1+B6+B12,Vitamin/Supplement,280,22.00,P&G,2027-04-30,Neurological vitamin supplement,https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=280&fit=crop
 Liv 52,Herbal Liver Tonic,Hepatoprotective,160,185.00,Himalaya,2027-05-31,Ayurvedic liver protection syrup,https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=280&fit=crop
 Septran DS,Sulfamethoxazole+Trimethoprim,Antibiotic,4,24.00,Abbott,2025-12-31,Sulfonamide antibiotic combination,https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=400&h=280&fit=crop
+npm run build 2>&1
